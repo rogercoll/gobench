@@ -10,7 +10,7 @@ import (
 
 func main() {
 	start := time.Now()
-	resp, err := http.Get("localhost:8000")
+	resp, err := http.Get("http://google.com")
 	if err != nil {
 		fmt.Println("Error while requesting url, exit")
 		os.Exit(1)
