@@ -4,52 +4,46 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 )
 
-const n = 100
-const c = 15
+const n = 1000
+const c = 6
 
 var wg sync.WaitGroup
 
-func request() {
+func request(url string) {
+	st := time.Now()
+	//http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 100
 	for i := 0; i < n; i++ {
-		resp, err := http.Get("http://localhost:8080/")
+		resp, err := http.Get(url)
 		if err != nil {
-			log.Fatal(err)
-			os.Exit(1)
+			log.Printf("%s\n", err)
 		}
-		if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+		resp.Body.Close()
+		code := resp.StatusCode
+		if code >= 200 && code <= 299 {
 			continue
 		} else {
-			fmt.Println("Bad StatusCode")
-			os.Exit(1)
+			log.Printf("HTTP Code = %d\n", code)
 		}
+
 	}
-	defer wg.Done()
+	f := time.Since(st).Seconds()
+	fmt.Printf("Time for %d requests took up %.2fs\n", n, f)
+	wg.Done()
 }
 
 func main() {
 	start := time.Now()
+
 	for i := 0; i < c; i++ {
 		wg.Add(1)
-		go request()
+		go request("http://localhost:8080/")
 	}
 	wg.Wait()
+
 	finish := time.Since(start).Seconds()
-	fmt.Printf("%.2fs des del començament\n", finish)
-	fmt.Println("Everything OK!")
-	s := fmt.Sprintf("For n = %d and c = %d took up %.2fs\n", n, c, finish)
-	f, err := os.OpenFile("request_go_server.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if _, err := f.Write([]byte(s)); err != nil {
-		log.Fatal(err)
-	}
-	if err := f.Close(); err != nil {
-		log.Fatal(err)
-	}
+	fmt.Printf("Total time for n = %d and c = %d took up %.2fs\n", n, c, finish)
 }
