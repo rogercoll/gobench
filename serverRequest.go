@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -23,7 +22,12 @@ func request(url string) {
 		if err != nil {
 			log.Printf("%s\n", err)
 		}
-		io.Copy(ioutil.Discard, resp.Body)
+		data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return
+		}
+		if data == nil {
+		}
 		resp.Body.Close()
 		code := resp.StatusCode
 		if code >= 200 && code <= 299 {
