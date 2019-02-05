@@ -2,25 +2,28 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
 	"time"
 )
 
-const n = 1000
-const c = 6
+const n = 10000
+const c = 8
 
 var wg sync.WaitGroup
 
 func request(url string) {
 	st := time.Now()
-	//http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 100
+	//http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 10000
 	for i := 0; i < n; i++ {
 		resp, err := http.Get(url)
 		if err != nil {
 			log.Printf("%s\n", err)
 		}
+		io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
 		code := resp.StatusCode
 		if code >= 200 && code <= 299 {
