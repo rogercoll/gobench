@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -12,13 +10,12 @@ import (
 )
 
 const n = 10000
-const c = 8
+const c = 9
 
 var wg sync.WaitGroup
 
 func request(url string) {
 	st := time.Now()
-	//http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 10000
 	tr := &http.Transport{
 		MaxIdleConns:       0,
 		IdleConnTimeout:    0,
@@ -39,16 +36,12 @@ func request(url string) {
 			fmt.Println(err)
 			continue
 		} //if there isnt a continue then it prints the error and then dereferences a nil pointer(Body)
-		if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
-			fmt.Println(err)
-		}
 		resp.Body.Close()
 		if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 			continue
 		} else {
 			log.Printf("HTTP Code = %d\n", resp.StatusCode)
 		}
-
 	}
 	f := time.Since(st).Seconds()
 	fmt.Printf("Time for %d requests took up %.2fs\n", n, f)
