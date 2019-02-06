@@ -2,40 +2,31 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 )
 
+//numb of conn per user/socket
 const n = 10000
-const c = 9
+
+//numb of clients
+const c = 2
 
 var wg sync.WaitGroup
 
-func request(url string) {
+func request(url string, client *http.Client) {
 	st := time.Now()
-	tr := &http.Transport{
-		MaxIdleConns:       0,
-		IdleConnTimeout:    0,
-		DisableCompression: true,
-	}
-	client := &http.Client{Transport: tr}
 	for i := 0; i < n; i++ {
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			log.Print(err)
-			os.Exit(1)
-		}
-		//Setting the header to close is used to inform the server that the client wants to close the connection after the transaction is complete
-		//Before doing that the connections were ESTABLISHED not in CLOSED state
-		req.Header.Set("Connection", "close")
-		resp, err := client.Do(req)
+		resp, err := client.Get(url)
 		if err != nil {
 			fmt.Println(err)
 			continue
-		} //if there isnt a continue then it prints the error and then dereferences a nil pointer(Body)
+		}
+		io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
 		if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 			continue
@@ -49,11 +40,20 @@ func request(url string) {
 }
 
 func main() {
+	//Tenim 8 cores, a partir de c > 8 es reparteix les goroutines entre els 8, una goroutine a causa del Round Robin pot ser que passi de RUN a WAIT per això el temps no és igual a una quan c = 8
 	start := time.Now()
-
+	defaultRoundTripper := http.DefaultTransport
+	defaultTransportPointer, ok := defaultRoundTripper.(*http.Transport)
+	if !ok {
+		panic(fmt.Sprintf("defaultRoundTripper not an *http.Transport"))
+	}
+	defaultTransport := *defaultTransportPointer // dereference it to get a copy of the struct that the pointer points to
+	defaultTransport.MaxIdleConns = c
+	defaultTransport.MaxIdleConnsPerHost = c
+	client := &http.Client{Transport: &defaultTransport}
 	for i := 0; i < c; i++ {
 		wg.Add(1)
-		go request("http://localhost:8080/")
+		go request("http://localhost:8080/", client)
 	}
 	wg.Wait()
 
