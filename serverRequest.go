@@ -6,20 +6,35 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
 
 const n = 10000
-const c = 5
+const c = 8
 
 var wg sync.WaitGroup
 
 func request(url string) {
 	st := time.Now()
 	//http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 10000
+	tr := &http.Transport{
+		MaxIdleConns:       0,
+		IdleConnTimeout:    0,
+		DisableCompression: true,
+	}
+	client := &http.Client{Transport: tr}
 	for i := 0; i < n; i++ {
-		resp, err := http.Get(url)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			log.Print(err)
+			os.Exit(1)
+		}
+		//Setting the header to close is used to inform the server that the client wants to close the connection after the transaction is complete
+		//Before doing that the connections were ESTABLISHED not in CLOSED state
+		req.Header.Set("Connection", "close")
+		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Println(err)
 			continue
