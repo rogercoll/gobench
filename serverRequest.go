@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 )
 
 const n = 10000
-const c = 8
+const c = 5
 
 var wg sync.WaitGroup
 
@@ -20,20 +21,17 @@ func request(url string) {
 	for i := 0; i < n; i++ {
 		resp, err := http.Get(url)
 		if err != nil {
-			log.Printf("%s\n", err)
-		}
-		data, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return
-		}
-		if data == nil {
+			fmt.Println(err)
+			continue
+		} //if there isnt a continue then it prints the error and then dereferences a nil pointer(Body)
+		if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
+			fmt.Println(err)
 		}
 		resp.Body.Close()
-		code := resp.StatusCode
-		if code >= 200 && code <= 299 {
+		if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 			continue
 		} else {
-			log.Printf("HTTP Code = %d\n", code)
+			log.Printf("HTTP Code = %d\n", resp.StatusCode)
 		}
 
 	}
