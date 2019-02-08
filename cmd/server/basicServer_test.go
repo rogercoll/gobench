@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//To test them independentlly git test -run /POST
+
 func TestHandler(t *testing.T) {
 	t.Run("GET", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/add", nil)

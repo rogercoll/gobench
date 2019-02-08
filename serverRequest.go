@@ -6,19 +6,15 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 )
 
-//numb of conn per user/socket
-const n = 10000
-
-//numb of clients
-const c = 2
-
 var wg sync.WaitGroup
 
-func request(url string, client *http.Client) {
+func request(url string, client *http.Client, n int) {
 	st := time.Now()
 	for i := 0; i < n; i++ {
 		resp, err := client.Get(url)
@@ -27,7 +23,7 @@ func request(url string, client *http.Client) {
 			continue
 		}
 		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
+		defer resp.Body.Close()
 		if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 			continue
 		} else {
@@ -41,7 +37,15 @@ func request(url string, client *http.Client) {
 
 func main() {
 	//Tenim 8 cores, a partir de c > 8 es reparteix les goroutines entre els 8, una goroutine a causa del Round Robin pot ser que passi de RUN a WAIT per això el temps no és igual a una quan c = 8
-	start := time.Now()
+	var n, c int
+	var err error
+
+	if n, err = strconv.Atoi(os.Args[1]); err != nil {
+		panic(err)
+	}
+	if c, err = strconv.Atoi(os.Args[2]); err != nil {
+		panic(err)
+	}
 	defaultRoundTripper := http.DefaultTransport
 	defaultTransportPointer, ok := defaultRoundTripper.(*http.Transport)
 	if !ok {
@@ -50,13 +54,19 @@ func main() {
 	defaultTransport := *defaultTransportPointer // dereference it to get a copy of the struct that the pointer points to
 	defaultTransport.MaxIdleConns = c
 	defaultTransport.MaxIdleConnsPerHost = c
-	client := &http.Client{Transport: &defaultTransport}
+	client := &http.Client{
+		Transport: &defaultTransport,
+	}
+	start := time.Now()
 	for i := 0; i < c; i++ {
 		wg.Add(1)
-		go request("http://localhost:8080/", client)
+		go request("http://localhost:8080/", client, n)
 	}
 	wg.Wait()
-
 	finish := time.Since(start).Seconds()
 	fmt.Printf("Total time for n = %d and c = %d took up %.2fs\n", n, c, finish)
+	//A partir de c > 64 tenim un increment del TPS
+	//fmt.Printf("TPS => %f\n", finish/c)
+	fmt.Printf("%.1f TPS\n", float64(n*c)/finish)
+	fmt.Printf("Average latency (tau) => %.4fms\n", finish/float64(n)*1000.0)
 }
