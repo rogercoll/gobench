@@ -15,7 +15,7 @@ type Values struct {
 }
 
 func handlerAdd(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
+	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
@@ -35,8 +35,13 @@ func handlerAdd(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%d", sum)
 }
 
+func load(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+}
+
 func NewServer() *mux.Router {
 	router := mux.NewRouter()
 	router.HandleFunc("/add", handlerAdd)
+	router.HandleFunc("/loadtest", load)
 	return router
 }
