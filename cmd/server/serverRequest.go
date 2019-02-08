@@ -14,6 +14,8 @@ import (
 
 var wg sync.WaitGroup
 
+//go run serverRequest.go 10000 2
+
 func request(url string, client *http.Client, n int) {
 	st := time.Now()
 	for i := 0; i < n; i++ {
@@ -57,10 +59,11 @@ func main() {
 	client := &http.Client{
 		Transport: &defaultTransport,
 	}
+
 	start := time.Now()
 	for i := 0; i < c; i++ {
 		wg.Add(1)
-		go request("http://localhost:8080/", client, n)
+		go request("http://localhost:8080/load", client, n)
 	}
 	wg.Wait()
 	finish := time.Since(start).Seconds()
