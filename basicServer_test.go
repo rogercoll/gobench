@@ -22,17 +22,21 @@ import (
 
 func TestHandler(t *testing.T) {
 	t.Run("GET", func(t *testing.T) {
+		valid := false
 		req, err := http.NewRequest("GET", "/add", nil)
 		if err != nil {
-			fmt.Println("Aqui arriba")
 			t.Fatal(err)
 			return
 		}
 		res := httptest.NewRecorder()
 		NewServer().ServeHTTP(res, req)
 		if res.Code != http.StatusOK {
-			t.Fatalf("Bad status code %d\n", res.Code)
+			valid = true
+		} else {
+			t.Fatalf("Bad status code, it cannot be a StatusOK code %d\n", res.Code)
 		}
+		assert.Equal(t, true, valid, "The two results should be the same.")
+
 	})
 	t.Run("POST", func(t *testing.T) {
 		values := Values{
