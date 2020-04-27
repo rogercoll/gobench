@@ -93,7 +93,6 @@ func benchmarkLoad(c int, b *testing.B) {
 	client := &http.Client{
 		Transport: &defaultTransport,
 	}
-	b.N = 10000
 	var wg sync.WaitGroup
 	router := NewServer()
 	for i := 0; i < c; i++ {
@@ -102,6 +101,8 @@ func benchmarkLoad(c int, b *testing.B) {
 	}
 	wg.Wait()
 }
+
+
 
 func BenchmarkLoad1(b *testing.B)   { benchmarkLoad(1, b) }
 func BenchmarkLoad8(b *testing.B)   { benchmarkLoad(8, b) }
